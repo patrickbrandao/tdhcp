@@ -1,0 +1,137 @@
+Tunnel DHCP
+=============
+
+(c) Konrad Rosenbaum, 2009
+protected under the GNU GPLv3 or at your option any newer
+(see COPYING for details)
+
+http://silmor.de/69
+
+(If there is any significant interest I will create a maillist too.)
+
+Target Audience
+-----------------
+
+This is an implementation of just a few parts of DHCP that are necessary to do
+DHCPv6 configuration of tunnel end-points. It is not very usable on any network
+link that has more than two end-points or more than one DHCP server.
+
+Building
+---------
+
+TDHCP has been ported to and tested on the following systems:
+
+*Linux (tested: i386/amd64)
+
+Just call "make" to create the binaries - if there are errors you are either 
+missing even the most basic parts of a build environment or it has not been
+ported to your OS yet.
+
+You will find two binaries (tdhcpd and tdhcpc) in the main directory after
+building - just copy them wherever you would like them - there is no explicit
+installation routine.
+
+Features
+---------
+
+* IA - address assignment (setup the clients IPv6 address)
+* PD - prefix delegation (tell the client about its routable subnet)
+* DNS - DNS option (tell the client where to find the IPv6 enabled DNS server)
+
+I do not plan to implement any other features (including relaying and 
+authentication), since they are not important for tunnel setup.
+
+Also please note that this implementation is not entirely true to the RFC,
+while still being compatible with other implementations.
+Where technically possible it ignores some of the more complicated rules for
+DHCP messages (eg. some of the timeouts and ID constraints) to make the
+implementation simpler.
+
+Daemon
+-------
+
+Other than more complete implementations of DHCPv6 it does not take a 
+configuration file - you specify all options as parameters.
+
+Type "tdhcpd --help" for details.
+
+Lease times are sent as "infinity" - ie. leases never time out while the link
+or tunnel exists.
+
+Client
+-------
+
+...does not have a config file either.
+
+Type "tdhcpc --help" for details.
+
+The client ignores lease times: it is a configure-and-forget implementation.
+That means once it succeeds to configure its interface or times out, it exits
+and forgets about the whole story - this effectively makes leases times
+indefinite as far as DHCP is concerned, even if the server sent a non-indefinite
+lease time.
+
+DUIDs
+------
+
+DUIDs are a bit of a touchy subject with DHCPv6. Normally fully blown DHCP 
+agents are supposed to create DUIDs when installed using a predefined algorithm.
+This is not very practical for a configuration-less implementation that
+moreover works on interfaces that usually don't have the necessary IDs (MACs).
+Hence this implementation per default creates DUIDs from its own enterprise 
+number plus the local host name.
+
+If no option is given both sides automatically calculate a unique code to use
+as DUID. Both sides use the PEN 0xffffffff plus 0x00 for server side or 0x01 
+for client side and the MD5 hash of the host name retrieved from the system or 
+given with the --local-id option.
+
+If you want to use something else, you can specify your own DUID:
+
+Ethernet plus Time:
+ --duid=0001-0001-TIME-MAC
+ -> replace TIME by the current Unix time (print "%08x\n" `date +%s`)
+ -> replace MAC with the MAC address of one of your ethernet cards
+Ethernet based:
+ --duid=0003-0001-MAC
+ -> replace MAC with the MAC address of one of your ethernet cards
+Enterprise based:
+ --duid=0002-ENUM-ID
+ -> replace ENUM by your 32bit enterprise number in hex
+  (see http://www.iana.org/assignments/enterprise-numbers)
+  please do not use the default enterprise number when you calculate your
+  own DUID - you risk collision with automatically calculated DUIDs
+ -> replace ID by an arbitrary hex string (with an even number of hex digits!)
+
+Known Bugs and Limitations
+---------------------------
+
+TDHCP is configuration-less. This limits it in certain respects. It is also
+designed to be very simple - the bare minimum of what is necessary to configure
+a PPP link or IPv6 tunnel.
+
+* it does not keep track of leases
+* it ignores DUIDs (except for using the server supplied DUID from Advertise
+  messages in its Request messages)
+* it ignores timers - it always assumes leases to be indefinite
+* it ignores many message and option types
+* the server is not able to handle relay agents
+* it can fail in very interesting ways if there is more than one server on the
+  link it is attached to or if the server feels the need to send more than one
+  reply to a request
+* it does not perform DAD (duplicate address detection)
+* it is not unicast enabled (global unicast senders are dropped; packets are
+  only accepted from link-local addresses fe80::/10)
+* I probably made lots of mistakes about timeouts (some of them deliberate)
+* it does not support security features
+
+I do not plan to fix any of the above - except if someone can convince me that
+the problem affects PPP or tunnel links.
+
+If you find any bug that affects security (and is not caused by an inherent 
+limitation of DHCP), please let me know: tdhcp (AT) silmor (DOT) de
+
+Patches to port to other Unixoid systems and for security problems are welcome.
+
+Patches that turn it into something resembling ISC DHCP or Dibbler will be
+dropped.
