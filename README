@@ -2,74 +2,66 @@ Tunnel DHCP
 =============
 
 (c) Konrad Rosenbaum, 2009
+(c) Patrick Brandao, 2015
 protected under the GNU GPLv3 or at your option any newer
 (see COPYING for details)
 
+Website original (link quebrado):
 http://silmor.de/69
 
-(If there is any significant interest I will create a maillist too.)
+tDHCP - software ultra-pequeno para dar suporte a servidor dhcp6 e cliente dhcp6
+orientada a tuneis (PPP, PPPoE, PPtP, EOIP, ...). Sem muita usabilidade para
+redes locais ethernet/broadcast.
 
-Target Audience
------------------
+Compilando
+----------
 
-This is an implementation of just a few parts of DHCP that are necessary to do
-DHCPv6 configuration of tunnel end-points. It is not very usable on any network
-link that has more than two end-points or more than one DHCP server.
+Software testado nos seguintes ambientes:
+- Slackware 14.1 64 bits (amd64): i3, i5, i7, xeon, fusion.
 
-Building
----------
+Caso ocorrar algum erro durante a compilacao, certifique-se
+de que seu sistema tem as bibliotecas minimas para compilacao.
+Todos os testas foram executados em Slackware 14.x instalacao FULL
 
-TDHCP has been ported to and tested on the following systems:
+Para compilar, execute:
 
-*Linux (tested: i386/amd64)
+# make clean
+# make
 
-Just call "make" to create the binaries - if there are errors you are either 
-missing even the most basic parts of a build environment or it has not been
-ported to your OS yet.
+Serão criados os binarios:
+tdhcpc - cliente DHCPv6
+tdhcpd - servidor DHCPv6
 
-You will find two binaries (tdhcpd and tdhcpc) in the main directory after
-building - just copy them wherever you would like them - there is no explicit
-installation routine.
+Copie-os para a pasta /usr/sbin/ ou qualquer
+pasta de sua preferencia. Comandos:
 
-Features
----------
+# cp -fav tdhcpc /usr/sbin/
+# cp -fav tdhcpd /usr/sbin/
 
-* IA - address assignment (setup the clients IPv6 address)
-* PD - prefix delegation (tell the client about its routable subnet)
-* DNS - DNS option (tell the client where to find the IPv6 enabled DNS server)
+Recursos do servidor - tdhcpd
+----------------------------------
 
-I do not plan to implement any other features (including relaying and 
-authentication), since they are not important for tunnel setup.
+- Enviar prefixo para delegacao (dhcp-pd)
+- Enviar dominio DNS
+- Enviar endereco de DNS recursivo
+- Enviar nome do dominio DNS
+- Todos os parametros enviados via argumento (sem arquivo de config)
+- Emprestimos enviados como INFINITOS.
 
-Also please note that this implementation is not entirely true to the RFC,
-while still being compatible with other implementations.
-Where technically possible it ignores some of the more complicated rules for
-DHCP messages (eg. some of the timeouts and ID constraints) to make the
-implementation simpler.
+Execute "tdhcpd --help" para detalhes de execucao.
 
-Daemon
--------
 
-Other than more complete implementations of DHCPv6 it does not take a 
-configuration file - you specify all options as parameters.
+Recursos do cliente - tdhcpc
+----------------------------------
 
-Type "tdhcpd --help" for details.
+- Solicita alocacao de IPv6 (endereco proprio) e Prefixo IPv6 (para redistribuir em rede local)
+- Executa script para ativar o IPv6 e o Prefixo. O script devera adicionar o ipv6 global da wan
+  e dividir prefixo IPv6 em sub-prefixos de acordo com a quantidade de interfaces locais.
 
-Lease times are sent as "infinity" - ie. leases never time out while the link
-or tunnel exists.
+Execute "tdhcpc --help" para detalhes de execucao.
 
-Client
--------
-
-...does not have a config file either.
-
-Type "tdhcpc --help" for details.
-
-The client ignores lease times: it is a configure-and-forget implementation.
-That means once it succeeds to configure its interface or times out, it exits
-and forgets about the whole story - this effectively makes leases times
-indefinite as far as DHCP is concerned, even if the server sent a non-indefinite
-lease time.
+Por executar em links PPP, o cliente não obedece o tempo de emprestimo. Caso
+a conexao do tunel seja quebrada tudo devera ser apagado e esquecido.
 
 DUIDs
 ------
