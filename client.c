@@ -281,6 +281,10 @@ static int execscript()
 		strncat(buf,dnsnames[i],sizeof(buf));
 	}
 	if(buf[0])setenv("DNSDOM",buf,1);
+	
+	// interface
+	if(device && device[0]) setenv("DEVICE", device, 1);
+	
 	/*dhcp server addr*/
 	setenv("DHCPSRV",inet_ntop(AF_INET6,&dhcpserver,tmp,sizeof(tmp)),1);
 	/*call*/
